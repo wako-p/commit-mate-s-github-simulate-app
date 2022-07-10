@@ -1,7 +1,6 @@
 # 概要
 
-`commit-mate.net/pages/tutorial.vue`のコンポーネント側のコードをシンプルに保つために、  
-GitHub をシュミュレーションする側のコードをクラスとして抽出したサンプルコードです。
+`commit-mate.net/pages/tutorial.vue`のコンポーネント側のコードをシンプルに保つために、GitHub をシュミュレーションする側のコードをクラスとして抽出したサンプルコードです。
 
 # 使い方
 
