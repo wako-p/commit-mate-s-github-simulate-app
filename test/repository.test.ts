@@ -258,4 +258,69 @@ describe("push", () => {
         // ローカルのmainブランチのコミット数のアサーション
         expect(6).toBe(local.currentBranch.commitCount);
     });
+
+    test("現在のブランチに上流ブランチが設定されていない場合は例外がスローされる", () => {
+        // given:
+        const remote = Repository.create("commit-mate.net");
+        const local = remote.clone();
+
+        // featブランチを作成して3回コミット
+        local.branch("feat");
+        local.switch("feat");
+        local.commit("commit1");
+        local.commit("commit2");
+        local.commit("commit3");
+
+        // when:
+        expect(() => {
+            local.push();
+        }).toThrowError(new Error(`fatal: The current branch "feat" has no upstream branch.`));
+    });
+
+    test("現在のブランチのコミット履歴を引数に指定したリモートリポジトリのブランチにpushできる", () => {
+        // given:
+        const remote = Repository.create("commit-mate.net");
+        const local = remote.clone();
+
+        // 作業ブランチを作成して3回コミット
+        local.branch("local/feat");
+        local.switch("local/feat");
+        local.commit("commit1");
+        local.commit("commit2");
+        local.commit("commit3");
+
+        // when:
+        local.push("--set-upstream", "origin", "local/feat");
+
+        // then:
+        expect(remote.branches[1].name).toBe("local/feat");
+        expect(remote.branches[1].history[0].message).toBe("commit1");
+        expect(remote.branches[1].history[1].message).toBe("commit2");
+        expect(remote.branches[1].history[2].message).toBe("commit3");
+
+        expect(local.branches[1].upstream?.name).toBe("local/feat");
+    });
+});
+
+describe("findBy", () => {
+    test("引数に指定した名前のブランチを取得できる", () => {
+        // given:
+        const remote = Repository.create("commit-mate.net");
+
+        // when:
+        const branch = remote.findBy("main");
+
+        // then:
+        expect(branch.name).toBe("main");
+    });
+
+    test("引数に指定した名前のブランチが存在しない場合は例外がスローされる", () => {
+        // given:
+        const remote = Repository.create("commit-mate.net");
+
+        // when/then:
+        expect(() => {
+            remote.findBy("test");
+        }).toThrowError(new Error('branch "test" not exists.'));
+    });
 });

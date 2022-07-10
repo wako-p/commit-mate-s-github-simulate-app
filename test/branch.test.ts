@@ -203,6 +203,6 @@ describe("push", () => {
         // when/then:
         expect(() => {
             feat.push();
-        }).toThrowError(Error);
+        }).toThrowError(new Error(`fatal: The current branch "feat" has no upstream branch.`));
     });
 });

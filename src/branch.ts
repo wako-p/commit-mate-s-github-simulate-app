@@ -52,7 +52,7 @@ export class Branch {
 
     public push(): void {
         if (this.notExistsUpstream()) {
-            throw new Error(`fatal: The current branch ${this._name} has no upstream branch.`);
+            throw new Error(`fatal: The current branch "${this._name}" has no upstream branch.`);
         }
 
         const copyedHistory = [...this._history];

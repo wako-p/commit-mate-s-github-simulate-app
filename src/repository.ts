@@ -1,8 +1,13 @@
 import { Branch } from "./branch";
+import { Remote } from "./remote";
 
 export class Repository {
     public get name(): string {
         return this._name;
+    }
+
+    public get remote(): Remote {
+        return this._remote;
     }
 
     public get currentBranch(): Branch {
@@ -23,17 +28,23 @@ export class Repository {
 
     private constructor(
         private readonly _name: string,
+        private readonly _remote: Remote,
         private _branches: Branch[],
         private _currentBranchIndex: number
     ) {}
 
     public static create(name: string): Repository {
+        const remote = Remote.initialize();
         const main = Branch.initialize();
         const branches = [main];
-        return new Repository(name, branches, 0);
+        return new Repository(name, remote, branches, 0);
     }
 
     public clone(): Repository {
+        // originとして自身を登録する
+        const remote = Remote.initialize();
+        remote.add("origin", this);
+
         // クローン元のブランチを上流ブランチとするブランチを作成するために
         // 全てのブランチに対して、自身を上流ブランチとするブランチの配列を作成する
         const clonedBranches = this._branches.map((branch) => {
@@ -41,7 +52,8 @@ export class Repository {
             clonedBranch.setUpstream(branch);
             return clonedBranch;
         });
-        return new Repository(this.name, clonedBranches, this._currentBranchIndex);
+
+        return new Repository(this.name, remote, clonedBranches, this._currentBranchIndex);
     }
 
     public branch(branchName: string): void {
@@ -79,8 +91,40 @@ export class Repository {
         this.currentBranch.commit(message);
     }
 
-    public push(): void {
-        // 現在のブランチのコミット履歴を現在のブランチの上流ブランチにpushする
-        this.currentBranch.push();
+    public push(): void;
+    public push(option: string, remote: string, branch: string): void;
+    public push(option?: string, remote?: string, branch?: string): void {
+        if (option != undefined && remote != undefined && branch != undefined) {
+            // オプションのチェック
+            if (option != "-u" && option != "--set-upstream") {
+                throw new Error();
+            }
+
+            // リモートに引数で指定されたブランチがなければ作成する
+            const remoteRepository = this._remote.findBy(remote);
+            if (remoteRepository.notExistsBranch(branch)) {
+                remoteRepository.branch(branch);
+            }
+
+            // ローカルのブランチの上流ブランチとしてリモートのブランチを設定する
+            const remoteBranch = remoteRepository.findBy(branch);
+            const localBranch = this.findBy(branch);
+            localBranch.setUpstream(remoteBranch);
+
+            // ローカルのブランチをpushする
+            localBranch.push();
+        } else {
+            // 現在のブランチをpushする
+            this.currentBranch.push();
+        }
+    }
+
+    public findBy(branchName: string): Branch {
+        if (this.notExistsBranch(branchName)) {
+            throw new Error(`branch "${branchName}" not exists.`);
+        }
+
+        const branchIndex = this.findBranchIndexBy(branchName);
+        return this._branches[branchIndex];
     }
 }
